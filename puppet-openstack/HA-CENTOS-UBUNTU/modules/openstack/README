@@ -1,0 +1,39 @@
+###HA(high_availability) Node
+For your HA node, you need to assign your node the high_availablity role. For example:
+
+```
+node 'ha.localdomain' {
+  include ::openstack::role::high_availablity
+}
+```
+
+###Controller Node
+For your controller node, you need to assign your node the controller role. For example:
+
+```
+node 'control.localdomain' {
+  include ::openstack::role::controller
+}
+```
+
+It's important to apply this configuration to the controller node before any of the other
+nodes are applied. The other nodes depend upon the service and database setup in the controller
+node.
+
+###Other Nodes
+
+For the remainder nodes, there are roles to assign for each. For example:
+```
+node 'storage.localdomain' {
+  include ::openstack::role::storage
+}
+
+node 'network.localdomain' {
+  include ::openstack::role::network
+}
+
+node /compute[0-9]+.localdomain/ {
+  include ::openstack::role::compute
+}
+```
+

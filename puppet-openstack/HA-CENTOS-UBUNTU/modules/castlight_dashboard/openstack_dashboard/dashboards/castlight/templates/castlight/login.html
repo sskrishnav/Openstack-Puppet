@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Castlight</title>
+    <!-- Styles -->
+    {% load staticfiles %}
+    <link href='{%static "castlight/css/lib/bootstrap.min.css" %}' rel="stylesheet">
+    <link href='{%static "castlight/css/lib/custom-font-lato.css" %}' rel="stylesheet">
+    <link href='{%static "castlight/css/custom/castlight.css" %}' rel="stylesheet">
+  </head>
+  <body class="login">
+    <section class="page-wrapper">
+        <!-- Header -->
+        <header class="header">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <!-- Logo -->
+                        <a href="#">
+                            {% load staticfiles %}
+                            <img src='{%static "castlight/img/logo-temp.jpg" %}' alt=""/>
+                        </a>
+                        <!-- User Actions and Welcome -->
+                        
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- Main Content -->
+        <main>
+            <section class="login-holder">
+                <h1 class="section-title">IaaS for IDC</h1>
+                <section class="login-box">
+                    <form role="form" method="post" action=".">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="id_username">Username</label>
+                            <input type="text" id="id_username" name="username" class="form-control" required/>
+                        </div>
+                        <div class="form-group">
+                            <label for="id_password">Password</label>
+                            <input type="password" id="id_password" name="password" class="form-control" required/>
+                        </div>
+                       
+                        <div class="form-group">
+                            <button type="submit" class="btn custom-button">Login</button><button type="button" class="btn btn-link">Forgot Password?</button>
+                        <div>
+                        <p class="text-muted">*Note: Use your AD credentials to login.</p>
+                    </form>
+                </section>
+            </section>
+        </main>
+        <!-- Footer -->
+        <footer class="footer ffixed-bottom">
+            <div class="footer-image"></div>
+        </footer>
+    </section>
+  </body>
+</html>

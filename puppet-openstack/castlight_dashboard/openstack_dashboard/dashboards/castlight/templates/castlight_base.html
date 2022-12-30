@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Castlight</title>
+    <!-- Styles -->
+    {% load staticfiles %}
+    <link href='{%static "castlight/css/lib/bootstrap.min.css" %}' rel="stylesheet">
+    <link href='{%static "castlight/css/lib/custom-font-lato.css" %}' rel="stylesheet">
+    <link href='{%static "castlight/css/custom/castlight.css" %}' rel="stylesheet">
+  </head>
+  <body>
+    
+    <section class="page-wrapper">
+        <!-- Header -->
+        <header class="header">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <!-- Logo -->
+                        <a href="#">
+                            {% load staticfiles %}
+                            <img src='{%static "castlight/img/logo-temp.jpg" %}' alt=""/>
+                        </a>
+                        <!-- User Actions and Welcome -->
+                        <div class="ua-welcome pull-right">
+                            <ul>
+                                <li>Welcome <span class="username">{{request.user.username}}</span> <span class="sep">|</span></li>
+                                
+                                <li class="logout-link"><a href="/castlight/logout">Logout</a></li>
+                            </ul>
+                        </div>
+                        <!-- Tabbed Navigation -->
+                        <ul class="nav nav-tabs pull-right header-tabs" role="tablist">
+                            <li role="presentation" class="{% if active_tab == 'manage_vms' %}active{% endif %}"><a href="#manage_vms" aria-controls="manage_vms" role="tab" data-toggle="tab">Manage VMs</a></li>
+                            <li role="presentation" class="{% if active_tab == 'create_vms' %}active{% endif %}"><a href="#create_vms" aria-controls="create_vms" role="tab" data-toggle="tab">Create VMs</a></li>
+                            <li role="presentation" class="{% if active_tab == 'utilization' %}active{% endif %}"><a href="#utilization" aria-controls="utilization" role="tab" data-toggle="tab">Utilization</a></li>
+                            <li role="presentation" class="{% if active_tab == 'manage_volumes' %}active{% endif %}"><a href="#manage_volumes" aria-controls="manage_volumes" role="tab" data-toggle="tab">Manage Volumes</a></li>
+                            <li role="presentation" class="{% if active_tab == 'manage_keypairs' %}active{% endif %}"><a href="#manage_keypairs" aria-controls="manage_keypairs" role="tab" data-toggle="tab">Manage Keypairs</a></li>
+                        </ul>
+                        
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- Main Content -->
+        <main>
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="tab-content">
+                            <!-- Manage VM -->
+                            <div role="tabpanel" class="tab-pane fade {% if active_tab == 'manage_vms' %}in active{% endif %}" id="manage_vms">
+                                {% block manage_vms_content %}
+                                {% endblock %}
+                            </div>
+                            <!-- Create VM -->
+                            <div role="tabpanel" class="tab-pane fade {% if active_tab == 'create_vms' %}in active{% endif %}" id="create_vms">
+                                {% block create_vms_content %}
+                                {% endblock %}
+                            </div>
+                            <!-- Utilization -->
+                            <div role="tabpanel" class="tab-pane fade {% if active_tab == 'utilization' %}in active{% endif %}" id="utilization">
+                                {% block utilization_content %}
+                                {% endblock %}
+                            </div>
+                            <!-- Manage Volumes -->
+                            <div role="tabpanel" class="tab-pane fade {% if active_tab == 'manage_volumes' %}in active{% endif %}" id="manage_volumes">
+                                {% block manage_volumes_content %}
+                                {% endblock %}
+                            </div>
+                            <!-- Mange Keypairs -->
+                            <div role="tabpanel" class="tab-pane fade {% if active_tab == 'manage_keypairs' %}in active{% endif %}" id="manage_keypairs">
+                                {% block manage_keypairs_content %}
+                                {% endblock %}
+                            </div>
+
+                        </div>
+                    </div>
+                </div>  
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-image"></div>
+        </footer>
+    </section>  
+    <!-- Scripts -->
+    {% load staticfiles %}
+    <script type="text/javascript" src='{%static "castlight/js/lib/jquery-1.11.3.min.js" %}'></script>
+    <script type="text/javascript" src='{%static "castlight/js/lib/bootstrap.min.js" %}'></script>
+    <script type="text/javascript" src='{%static "castlight/js/main.js" %}'></script>
+  </body>
+</html>

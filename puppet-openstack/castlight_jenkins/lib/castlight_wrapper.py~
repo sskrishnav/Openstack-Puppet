@@ -1,0 +1,159 @@
+import os
+import sys
+import commands
+import paramiko
+import time
+import datetime
+import json
+sys.path.append("../")
+import conf.castlight_config as cl_config
+from lib.castlight_lib import CASTLIGHT_LIB
+
+
+class CASTLIGHT_WRAPPER():
+    def __init__(self):
+        self.cl_lib = CASTLIGHT_LIB()
+        self.cl_lib.host_ip = cl_config.controller_ip
+        self.cl_lib.project_info['project_id'] = cl_config.admin_project_id
+        self.cl_lib.project_info['domain_id'] = cl_config.admin_domain_id
+        self.cl_lib.project_info['project_name'] = cl_config.admin_project_name
+        self.cl_lib.project_info['user_name'] = cl_config.admin_user_name
+        self.cl_lib.project_info['password'] = cl_config.admin_password
+        self.cl_lib.project_info['token'] = self.cl_lib.get_v3_token(
+                                                self.cl_lib.host_ip,
+                                                self.cl_lib.project_info['domain_id'],
+                                                self.cl_lib.project_info['project_name'],
+                                                self.cl_lib.project_info['user_name'],
+                                                self.cl_lib.project_info['password'])
+        print "The current project details are : %s\n" % self.cl_lib.project_info
+        return                                                       
+
+    def create_ssh_object(self, host_ip, username, password):
+        try:
+            for iteration in range(0,1):
+                try:
+                    print ("SSH object for host : %s, username : %s, "
+                                     "password : %s" % (host_ip, username, password))
+                    ssh = paramiko.SSHClient()
+                    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                    ssh.connect(host_ip, username = username,
+                                password = password, timeout = 60)
+                    print "Creation of ssh object for %s is succeded" % host_ip
+                    return ssh
+                except Exception as ex:
+                    print "We had an authentication exception!\n", ex
+                    shell = None
+
+        except Exception as ex:
+            print "We had an authentication exception!\n", ex
+            shell = None
+    
+    def run_cmd_on_server(self, ssh_obj, command):
+        stdin, stdout, stderr = ssh_obj.exec_command(command)
+        stdin.flush()
+        data = stdout.read()
+        return data.rstrip(os.linesep)
+    
+    def launch_vm_with_floating_ip(self):
+        #servers = self.cl_lib.list_servers()
+        #print "ALL VM's : %s" % servers
+        server_name = "k_vm_" + str(datetime.datetime.now())
+        image_console_log_expr = cl_config.image_console_log_expr
+        vm_id = self.cl_lib.create_server(cl_config.image_name, cl_config.flavor_name,
+                              cl_config.net_name, server_name, image_console_log_expr)
+        if not isinstance(vm_id, unicode):
+            print "VM Creation failed with reason : %s\n" % vm_id
+            return
+        print "VM Created with ID : %s\n" % vm_id
+
+        floatingip_id = self.cl_lib.create_floating_ip(cl_config.ext_nw_name)
+        if not isinstance(floatingip_id, unicode):
+            print "Creation of floating ip is failed with reason : %s\n" % floatingip_id
+            return
+        print "Floating Ip ID : %s\n" % floatingip_id
+
+        net_id = self.cl_lib.get_net_id(cl_config.net_name)
+        if not isinstance(net_id, unicode):
+            print "Get Net id is failed with a reason : %s\n" % net_id
+            return
+        print "Net ID : %s\n" % net_id
+
+        port_details = self.cl_lib.get_specific_port_by_server_id(net_id, vm_id)
+        if not isinstance(port_details, dict):
+            print "Get Port ID failed with reason : %s\n" % port_details
+            return
+        port_id = port_details["id"]
+        print "Port ID : %s\n" % port_id
+
+        fl_output = self.cl_lib.associate_floating_ip(floatingip_id, port_id)
+        if not fl_output and not isinstance(fl_output, bool):
+            print "Association of floating ip is failed with reason : %s\n" % fl_output
+            return
+        print "Floating Ip association done successfully\n"
+
+        floatingip_ip = self.cl_lib.get_floating_ip_by_port_id(port_id)
+        if not isinstance(floatingip_ip, unicode):
+            print "Get floating ip from port ID is failed with reason : %s\n" % floatingip_ip
+            return
+        print "Floating Ip : %s\n" % floatingip_ip
+
+        vm_ips = self.cl_lib.get_server_ip(vm_id)
+        if not isinstance(vm_ips, list):
+            print "Get VM IP's are failed with reason : %s\n" % vm_ips
+            return
+        print "IP's of VM : %s\n" % vm_ips
+        
+        result = {}
+        result['vm_id'] = vm_id
+        result['floatingip_id'] = floatingip_id
+        result['public_ip'] = floatingip_ip
+        result['private_ip'] = vm_ips
+        return result
+
+
+    def delete_vm_with_floating_ip(self, vm_id, floatingip_id):
+        print "Deletion started"
+        fl_output = self.cl_lib.disassociate_floating_ip(floatingip_id)
+        if not fl_output and not isinstance(fl_output, bool):
+            print "Disassociation of floating ip is failed with reason : %s\n" % fl_output
+            return
+        print "Floating Ip disassociation done successfully\n"
+
+        fl_output = self.cl_lib.delete_floating_ip(floatingip_id)
+        if not fl_output and not isinstance(fl_output, bool):
+            print "Deletion of floating ip is failed with reason : %s\n" % fl_output
+            return
+        print "Floating Ip deletion is done successfully\n"
+
+        result = self.cl_lib.delete_server(vm_id)
+        if not result:
+            print "Delete server failes with reason %s\n" % result
+            return
+        print "Delete server with Id %s is succeded\n" % vm_id
+
+
+
+
+"""
+if __name__ == "__main__":
+    cl_wrap = CASTLIGHT_WRAPPER()
+    l_result = cl_wrap.launch_vm_with_floating_ip()
+    if not isinstance(l_result, dict):
+        print "Launch VM with Floating IP is failed\n"
+        sys.exit(0)
+    print "Launch VM with Floating IP is succeded with details : %s\n" % l_result
+
+    #raw_input("ENTER ANY KEY TO DELETE VM\n")
+
+    d_result = cl_wrap.delete_vm_with_floating_ip(l_result['vm_id'], l_result['floatingip_id'])
+    if not d_result and isinstance(d_result, bool):
+        print "Deletion of VM with Floating IP is failed\n"
+        sys.exit(0)
+    print "Deletion of VM with Floating IP is succeded\n"
+
+    #cl_wrap.delete_vm_with_floating_ip("e8fa744b-3c88-4713-8cee-cf9b7cc7dc34", "4b610c9c-29bb-46e5-8f1b-7ac92898cdca")
+"""
+
+
+
+

@@ -1,0 +1,4 @@
+*.pyc
+.venv
+openstack_dashboard/local/local_settings.py
+local_settings.py

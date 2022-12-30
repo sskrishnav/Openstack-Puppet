@@ -1,0 +1,800 @@
+import sys
+from lib.request import CLRequest
+import conf.castlight_config as cl_config
+import time
+import json
+sys.path.append("../")
+
+
+class CASTLIGHT_LIB(CLRequest):
+
+    def __init__(self):
+        self.host_ip = "127.0.0.1"
+        self.project_info = {}
+        self.project_info["project_id"] = ""
+        self.project_info["domain_id"] = ""
+        self.project_info["project_name"] = ""
+        self.project_info["user_name"] = ""
+        self.project_info["password"] = ""
+        self.project_info["token"] = ""
+        CLRequest.__init__(self)
+
+    def get_v3_token(self, host_ip, domain_id, project_name,
+                     user_name, password):
+        _url = "http://"+str(host_ip)+":5000/v3/auth/tokens"
+        _headers = {"content-type": "application/json"}
+        _token_info = {"auth":
+                       {"identity":
+                        {"methods": ["password"],
+                         "password": {"user":
+                                      {"name": user_name,
+                                       "domain": {"id": domain_id},
+                                       "password": password
+                                       }
+                                      }
+                         },
+                        "scope": {"project":
+                                  {"name": project_name,
+                                   "domain": {"id": domain_id}
+                                   }
+                                  }
+                        }
+                       }
+
+        _body = json.dumps(_token_info)
+        response = self.request("POST", _url, _headers, _body)
+        if response is None:
+            return response
+        if response.status not in [200, 201, 202, 203, 204]:
+            return response.status
+        token_id = response.getheaders()['x-subject-token']
+        # print "token_id : %s" % token_id
+        return token_id
+
+    def get_keystone_v3_project_id(self, project_name):
+        """
+        It gives the project ID.
+        params: project_name: name of the project.
+        Returns: project ID.
+        """
+
+        _url = "http://" + self.host_ip + ":35357/v3/projects?name=" + \
+               str(project_name)
+        _headers = {'x-auth-token': self.project_info["token"],
+                    'content-type': 'application/json'}
+        _body = None
+
+        response = self.request("GET", _url, _headers, _body)
+
+        if response is None:
+            print ("No response from Server while getting the "
+                   "ID of project")
+            return response
+
+        if response.status not in [200, 201, 202, 203, 204]:
+            print ("Get project ID Failed with status %s and error : %s" %
+                   (response.status, response.data))
+            return response.status
+
+        output = json.loads(response.data)
+        # print ("project details : %s " % output)
+        if len(output['projects']) != 1:
+            print("No. of projects with name %s is %s"
+                  % (project_name, len(output['projects'])))
+        print "Project ID : %s\n" % output['projects'][0]['id']
+        return output['projects'][0]['id']
+
+    def get_image_id(self, image_name):
+        """
+        Get the image ID based on the image name.
+        param: image_name: Name of the image.
+        Return: ID (Unicode) of the image, on success.
+        """
+        _url = "http://" + self.host_ip + ":8774/v2/" +\
+            self.project_info["project_id"] + "/images/detail"
+        _headers = {'Content-type': 'application/json',
+                    'x-auth-token': self.project_info["token"]}
+        _body = None
+
+        _result = self.request("GET", _url, _headers, _body)
+        if _result is None:
+            print ("No response from server while getting images.")
+            return
+        if _result.status not in [200, 201, 202, 203, 204]:
+            print ("Get image ID Failed with status %s " %
+                   _result.status)
+            return _result.status
+
+        _output = json.loads(_result.data)
+        for _images in _output['images']:
+            if _images['name'].lower() == image_name.lower():
+                print ("Image Name: %s, Image ID : %s \n"
+                       % (image_name, _images['id']))
+                return _images['id']
+        print ("The image: %s is NOT found\n" % image_name)
+
+    def get_flavor_id(self, flavor_name):
+        """
+        Gets the image flavor.
+        param: Get the images's flavor ID.
+        Return: ID (Unicode) of the flavor, on success.
+        """
+        _url = "http://" + self.host_ip + ":8774/v2/" +\
+            self.project_info["project_id"] + \
+            "/flavors/detail"
+        _headers = {'x-auth-token': self.project_info["token"]}
+        _body = None
+
+        response = self.request("GET", _url, _headers, _body)
+        if response is None:
+            print ("No response from server while getting flavors.")
+            return
+        if response.status not in [200, 201, 202, 203, 204]:
+            print ("Get flavor ID Failed with status %s " %
+                   response.status)
+            return response.status
+
+        output = json.loads(response.data)
+
+        for flavors in output['flavors']:
+            if flavors['name'].lower() == flavor_name.lower():
+                print ("Flavor Name: %s, Flavor ID: %s\n"
+                       % (flavor_name, flavors['id']))
+                return flavors['id']
+
+        print ("Flavor:%s is NOT found\n" % flavor_name)
+
+    def get_net_id(self, net_name):
+        """
+        It gets the network ID.
+        params:
+            net_name: Name of the network.
+        Return: network ID (Unicode), on success.
+        """
+        _url = "http://" + self.host_ip + ":9696/v2.0/networks"
+        _headers = {'x-auth-token': self.project_info["token"]}
+        _body = None
+
+        result = self.request("GET", _url, _headers, _body)
+
+        if result is None:
+            print (
+                "No response from Server while trying to"
+                " get networks of tenant: %s" %
+                self.project_info["project_id"])
+            return result
+
+        if result.status not in [200, 201, 202, 203, 204]:
+            print ("Get network Failed with status %s " % result.status)
+            return result.status
+
+        output = json.loads(result.data)
+        print ("Networks: %s" % output['networks'])
+
+        for nets in output['networks']:
+            if ((nets['name'].lower() == net_name.lower()) and
+                (net_name == cl_config.ext_nw_name or
+                 (nets['tenant_id'] == self.project_info["project_id"]))):
+                print ("Net ID : %s " % nets['id'])
+                return nets['id']
+
+        print ("Net:%s Not Found" % net_name)
+        return
+
+    def create_server(self, image_name, flavor_name, net_name,
+                      server_name, image_console_log_expr):
+        """
+        It launches the vm.
+        params:
+            image_name: Name of the image using which the vm will be booted up.
+            flavor_name: Name of the falvor.
+            net_name: Network name on which the vm will be launched.
+            server_name: Name of the server.
+        """
+
+        print ("Launching server...")
+        server = {}
+        server['id'] = None
+        server['status'] = None
+
+        # Get the image id.
+        image_id = self.get_image_id(image_name)
+        if not isinstance(image_id, unicode):
+            err_msg = ("Problem while getting image_id corresponding"
+                       " to imageName:%s" % image_name)
+            print err_msg
+            server['status'] = err_msg
+            return server
+        print "Image ID : %s" % image_id
+
+        # GEt the flavor id
+        flavor_id = self.get_flavor_id(flavor_name)
+        if not isinstance(flavor_id, unicode):
+            err_msg = ("Problem while getting flavor_id corresponding"
+                       " to flavorName:%s" % flavor_name)
+            print err_msg
+            server['status'] = err_msg
+            return server
+        print "flavor ID : %s" % flavor_id
+
+        # Get net id
+        net_id = self.get_net_id(net_name)
+        if not isinstance(net_id, unicode):
+            print ("Problem while getting network id corresponding"
+                   " to network name : %s" % net_name)
+            return
+
+        _url = "http://" + self.host_ip + ":8774/v2/" + \
+            self.project_info["project_id"] + "/servers"
+
+        _headers = {'x-auth-token': self.project_info["token"],
+                    'content-type': 'application/json'}
+
+        _server_info = {"server": {
+            "name": server_name,
+            "imageRef": image_id,
+            "flavorRef": flavor_id,
+            "max_count": 1,
+            # "availability_zone": host,
+            "min_count": 1,
+            "networks": [{"uuid": net_id}]
+        }}
+
+        _body = json.dumps(_server_info)
+        response = self.request("POST", _url, _headers, _body)
+        if response is None:
+            err_msg = ("Unable to get the response from server "
+                       "while creating VM")
+            print err_msg
+            server['status'] = err_msg
+            return server
+
+        if response.status not in [200, 201, 202, 203, 204]:
+            err_msg = ("Create Server Failed with status %s " %
+                       response.status)
+            print err_msg
+            server['status'] = err_msg
+            return server
+        output = json.loads(response.data)
+        print ("Server details : %s " % output)
+
+        server['id'] = output['server']['id']
+
+        # Default is poll on the server status.
+        poll_output = self.poll_on_server_boot_up(server['id'],
+                                                  image_console_log_expr)
+        # print ("-> Poll_Output: %s, type= %s" % (poll_output,
+        #                                          type(poll_output)))
+        server['status'] = poll_output
+        if poll_output is not True:
+            err_msg = ("VM booting is failed with reason : %s" % poll_output)
+            print err_msg
+            server['status'] = err_msg
+            return server
+
+        return server
+
+    def list_servers(self, all_tenants=False):
+        """
+        This lists the server in a tenant.
+        params:
+            -
+        Optional params:
+            all_tenants: To enable searching the vm in all the tenants.
+        Return:
+            Dict containing the list of the servers, on success.
+        """
+        _url = "http://" + self.host_ip + ":8774/v2/" + \
+            self.project_info["project_id"] + "/servers/detail"
+        if all_tenants:
+            _url = "http://" + self.host_ip + ":8774/v2/" + self.project_info[
+                "project_id"] + "/servers/detail?all_tenants=1"
+        _headers = {'x-auth-token': self.project_info["token"],
+                    'content-type': 'application/json'}
+        _body = None
+        response = self.request("GET", _url, _headers, _body)
+        if response is None:
+            print ("No response from server while listing servers.")
+            return
+        if response.status not in [200, 201, 202, 203, 204]:
+            print ("List servers Failed with status %s " %
+                   response.status)
+            return response.status
+
+        output = json.loads(response.data)
+        print ("Servers List :%s \n" % output)
+        return output["servers"]
+
+    def show_server(self, server_id):
+        """
+        It gives the details of the server.
+        params:
+            server_id: ID of the server.
+        Return:
+            Dict containing the details of the server, on success.
+        """
+        _url = "http://" + self.host_ip + ":8774/v2/" + \
+            self.project_info["project_id"] + "/servers/" + server_id
+        _headers = {'Content-type': 'application/json',
+                    'x-auth-token': self.project_info["token"]
+                    }
+        _body = None
+        response = self.request("GET", _url, _headers, _body)
+        if response is None:
+            print ("No response from server while showing the vms")
+            return
+        if response.status not in [200, 201, 202, 203, 204]:
+            print ("Show server failed with status %s " %
+                   response.status)
+            return response.status
+
+        output = json.loads(response.data)
+        print ("Instance Detail : %s \n" % output)
+
+        return output["server"]
+
+    def delete_server(self, server_id):
+        """
+        It Deletes server.
+        Arguments:
+            server_id: uuid of the server
+        Returns: True on successful deletion of server.
+        """
+        print ("Deleting server : %s" % server_id)
+
+        _url = "http://" + self.host_ip + ":8774/v2/" + \
+            self.project_info["project_id"] + "/servers/" + server_id
+        _headers = {'Content-type': 'application/json',
+                    'x-auth-token': self.project_info["token"]}
+        _body = None
+
+        response = self.request("DELETE", _url, _headers, _body)
+        if response is None:
+            print ("No response from server while deleting vm.")
+            return
+        if response.status not in [200, 201, 202, 203, 204]:
+            print ("Get instance Failed with status %s " %
+                   response.status)
+            return response.status
+
+        print ("Deleted server : %s \n" % server_id)
+        return True
+
+    def poll_for_active_status(self, server_id):
+        """
+        It polls on the Active status of the server.
+        Note:
+            Polling finishes when the server is Active or goes to error state.
+        params:
+            server_id: Id of the server.
+        Return: Status (String)
+        """
+        status = "BUILDING"
+        iteration = 30
+        while status.upper() != "ACTIVE" or status.upper() != "ERROR":
+            server_info = self.show_server(server_id)
+            if not isinstance(server_info, dict):
+                return
+            status = server_info['status']
+            print ("Server status : %s" % status)
+            if status.upper() in ['ACTIVE', 'ERROR']:
+                break
+            print ("Waiting till server becomes active ...")
+            time.sleep(20)
+            iteration -= 1
+            if not iteration:
+                err_msg = "The server:%s is NOT up within 10 minutes."\
+                    " Status: %s" % (server_id, status)
+                print (err_msg)
+                return "POLL_TIME_EXCEEDED"
+
+        print ("Server becomes %s\n" % status)
+
+        return status
+
+    def list_port(self):
+        """
+        Returns list of ports details.
+        """
+        _url = "http://" + self.host_ip + ":9696/v2.0/ports.json"
+        _headers = {'Content-type': 'application/json',
+                    'x-auth-token': self.project_info["token"]}
+        _body = None
+
+        response = self.request("GET", _url, _headers, _body)
+
+        if response is None:
+            print ("No response from Server, while listing ports.\n")
+            return response
+
+        if response.status not in [200, 201, 202, 203, 204]:
+            print ("Get port list Failed with status %s\n"
+                   % response.status)
+            return response.status
+
+        output = json.loads(response.data)
+        print ("Port List : %s \n" % output)
+        return output["ports"]
+
+    def get_server_ip_mac(self, server_id):
+        """
+        It gets the server's port info like IP and MAC.
+        Note: This corresponds to neutron port corresponding to the server.
+
+        server_id: ID of the server.
+        """
+        port_list = self.list_port()
+        if not isinstance(port_list, list):
+            return
+        interface_list = []
+        for port in port_list:
+            if port["device_id"] == server_id:
+                port_info = {}
+                port_info['mac'] = port['mac_address']
+                port_info['ip_address'] = port['fixed_ips'][0]['ip_address']
+                interface_list.append(port_info)
+
+        print ("VM Interface Info : %s \n" % interface_list)
+        return interface_list
+
+    def get_server_ip(self, server_id):
+        """
+        It gets the server ip based on the server ID.
+        params:
+            server_id: ID of the server.
+        Return:
+            Server's IP(s) (list), on success.
+        """
+        interface_list = self.get_server_ip_mac(server_id)
+        if not isinstance(interface_list, list):
+            return
+
+        print ("interface_list:%s" % interface_list)
+        ip_addresses = []
+        for interface in interface_list:
+            ip_addresses.append(interface['ip_address'])
+
+        print ("ip_addresses for server %s is %s\n" % (server_id,
+                                                       ip_addresses))
+        return ip_addresses
+
+    def get_server_details_by_name(self, server_name,
+                                   all_tenants=False):
+        """
+        This returns the server details based on the name of the server.
+        params:
+            server_name: Name of the server.
+            tenant_id: Tenant ID
+        Optional params:
+            all_tenants: To enable searching the vm in all the tenants.
+        Return:
+            Dict containing the details of the server, on success.
+        """
+        servers = self.list_servers(all_tenants)
+        if not isinstance(servers, list):
+            return
+
+        for server in servers:
+            if server['name'] == server_name:
+                print ("Server details: %s" % server)
+                return server
+
+        print ("There is NO server with name: %s in tenant: %s\n" %
+               (server_name, self.project_info["project_id"]))
+
+    def get_server_console_log(self, server_id, length=1):
+        """
+        It returns the console log of the server. The length tells how many
+        lines we want to TAIL the console log.
+        params:
+            server_id: ID of the server.
+            length: Length of the log that to be tailed.
+        Return:
+            String, on success.
+        """
+        _url = "http://" + self.host_ip + ":8774/v2/" + \
+            self.project_info["project_id"] + "/servers/" + \
+            server_id + "/action"
+        _headers = {'Content-type': 'application/json',
+                    'x-auth-token': self.project_info["token"]
+                    }
+        console_output = {'os-getConsoleOutput': {'length': length}}
+
+        _body = json.dumps(console_output)
+        response = self.request("POST", _url, _headers, _body)
+        if response is None:
+            print ("No response from server while"
+                   " getting the console log of the server.")
+            return
+        if response.status not in [200, 201, 202, 203, 204]:
+            print ("Error while getting the console log of the "
+                   "server: %s. Response status= %s" %
+                   (server_id, response.status))
+            return response.status
+
+        output = json.loads(response.data)
+        print ("Server's console log tailed with length: %d is %s\n"
+               % (length, output['output']))
+        return output['output']
+
+    def poll_on_server_boot_up(self, server_id, image_console_log_expr,
+                               monitor_duration_s=600):
+        """
+        It polls on the server to check whether it booted up completely or not.
+        Using this we can also know whether the vm got the ip_addr or not.
+        Arguments:
+            server_id: The server ID
+        Optional params:
+            image_console_log_expr : console log after vm boots up successfylly
+                Ex => cirros login
+            monitor_duration: how long it polls on the server to boot up.
+        Return: On Success.
+                    True : On successful boot up and the
+                On Failure:
+                    String: message containing the respective reason.
+        """
+        try:
+            vm_status = self.poll_for_active_status(server_id)
+            if not vm_status:
+                err_msg = ("Error while doing show server: %s\n"
+                           % str(server_id))
+                print (err_msg)
+                return err_msg
+
+            if vm_status.lower() == "error":
+                err_msg = "VM: %s LAUNCHED WITH ERROR STATE\n" % str(server_id)
+                print (err_msg)
+                return err_msg
+
+            start_time = time.time()
+            print "Poll on the server started at: %s" % time.ctime()
+
+            while True:
+                # Get the server's console output.
+                console_output = self.get_server_console_log(server_id)
+                if not isinstance(console_output, unicode):
+                    err_msg = "Problem while getting vm console.\n"
+                    print err_msg
+                    return err_msg
+
+                print ("Output of the console log: %s" % console_output)
+                if (image_console_log_expr in console_output):
+
+                    msg = ("The Server; %s booted up successfully."
+                           % server_id)
+                    print 70 * "*" + "\n" + msg + "\n" + 70 * "*"
+                    return True
+
+                print "Sleeping for 10 secs ..."
+                time.sleep(10)
+                now_time = time.time()
+                if (now_time - start_time) > monitor_duration_s:
+                    msg = ("The server couldn't boot up within %s seconds.\n"
+                           % monitor_duration_s)
+                    print (msg)
+                    return msg
+
+        except Exception as err:
+            # LOG_OBJ.exception(err)
+            print err
+            return "Problem while polling on the server to boot up\n"
+
+    def get_specific_port_by_server_id(self, net_id, server_id):
+        """
+        This is basically used to identify a particular port info for a vm
+        that has multiple interfaces.
+
+        This will return the port of the vm created in the net: net_id.
+        Return: Dict containing port details, on success
+        """
+        _url = "http://" + self.host_ip + ":9696/v2.0/ports.json"
+        _headers = {'Content-type': 'application/json',
+                    'x-auth-token': self.project_info["token"]}
+        _body = None
+
+        response = self.request("GET", _url, _headers, _body)
+
+        if response is None:
+            print ("No response from Server while getting ports.\n")
+            return None
+
+        if response.status not in [200, 201, 202, 203, 204]:
+            print ("Get port ID Failed with status %s \n"
+                   % response.status)
+            return response.status
+
+        output = json.loads(response.data)
+        print ("Port details: %s" % output)
+
+        for port in output['ports']:
+            if port["device_id"] == server_id and port['network_id'] == net_id:
+                print ("Port ID:%s" % port['id'])
+                return port
+        print ("There is NO port corresponding to server ID: %s"
+               " in Network: %s\n" % (server_id, net_id))
+        return None
+
+    def create_floating_ip(self, extnet_name,
+                           return_details=False):
+        """
+        It creates the floating ip from external ip pool.
+        params:
+            extnet_name: External network name.
+            return_details: Tells whether to return the details of floating ip.
+        Return:
+            On success: Floating Ip (Unicode), if return_details=False
+                        Dictionary, if return_details=True
+        """
+        _external_net_id = self.get_net_id(extnet_name)
+        if not isinstance(_external_net_id, unicode):
+            return
+
+        print ("Creating floating ip.")
+
+        _url = "http://" + self.host_ip + ":9696/v2.0/floatingips.json"
+        _headers = {'x-auth-token': self.project_info["token"],
+                    'content-type': 'application/json'}
+
+        _floatingip_info = {"floatingip": {
+            "floating_network_id": _external_net_id}}
+        _body = json.dumps(_floatingip_info)
+
+        response = self.request("POST", _url, _headers, _body)
+
+        if response is None:
+            print ("No response from Server while creating floating ip\n")
+            return response
+
+        if response.status not in [200, 201, 202, 203, 204]:
+            print (" Creating floating ip Failed with status %s \n"
+                   % response.status)
+            return response.status
+
+        output = json.loads(response.data)
+        print ("Floating IP details : %s \n" % output)
+        if return_details:
+            return output['floatingip']
+        return output['floatingip']['id']
+
+    def list_floating_ip(self):
+        """
+        It lists the floating ip allocated for the tenant.
+        Return:
+            List of floating IP, on success.
+        """
+        _url = "http://" + self.host_ip + ":9696/v2.0/floatingips.json"
+        _headers = {'x-auth-token': self.project_info["token"],
+                    'content-type': 'application/json'}
+        _body = None
+
+        response = self.request("GET", _url, _headers, _body)
+        if response is None:
+            print ("No response from Server while listing the"
+                   " floating ips\n")
+            return response
+
+        if response.status not in [200, 201, 202, 203, 204]:
+            print ("Retriving floating ip list Failed with"
+                   " status %s \n" % response.status)
+            return response.status
+
+        output = json.loads(response.data)
+        print ("Floating ip list: %s\n" % output)
+
+        return output["floatingips"]
+
+    def get_floating_ip_by_port_id(self, port_id):
+        """
+        It Returns the floating ip i.e associated with the port_id.
+        params:
+            port_id: neutron port_id
+        Return:
+            Floating IP(Unicode), on success.
+        """
+        floatingips_info = self.list_floating_ip()
+        if not isinstance(floatingips_info, list):
+            return None
+
+        for floating_ip_info in floatingips_info:
+            if floating_ip_info['port_id'] == port_id:
+                floating_ip = floating_ip_info['floating_ip_address']
+                print ("Floating ip for port id:%s is %s\n"
+                       % (port_id, floating_ip))
+                return floating_ip
+
+        print ("There is NO floating ip for port id: %s\n" % port_id)
+        return None
+
+    def associate_floating_ip(self, floatingip_id, port_id):
+        """
+        It associates the floating ip to a port.
+        params:
+            floatingip_id: Id of the floating IP.
+            port_id: Id of the port to which floating ip will be associated.
+        Return: True, on success.
+        """
+        _url = "http://" + self.host_ip + ":9696/v2.0/floatingips/" + \
+            floatingip_id + ".json"
+        _headers = {'x-auth-token': self.project_info["token"],
+                    'content-type': 'application/json'}
+        _floatingip_info = {"floatingip": {"port_id": port_id}}
+        _body = json.dumps(_floatingip_info)
+
+        response = self.request("PUT", _url, _headers, _body)
+        if response is None:
+            print ("No response from Server while associating"
+                   " the floating ip\n")
+            return response
+        if response.status not in [200, 201, 202, 203, 204]:
+            print (" Associating floating ip Failed with status %s \n"
+                   % response.status)
+            return response.status
+
+        output = json.loads(response.data)
+        print ("Associated floating ip %s with VM ip : %s \n"
+               % (output['floatingip']['floating_ip_address'],
+                  output['floatingip']['fixed_ip_address']))
+
+        return True
+
+    def disassociate_floating_ip(self, floating_id):
+        """
+        Disassociates floating ip from vm port.
+        Arguments:
+            floating_id: floating ip id.
+        Return: True on successful disassociation of floating ip.
+        """
+        print ("Disassociate Floatingip with id %s" % floating_id)
+
+        _url = "http://" + self.host_ip + ":9696/v2.0/floatingips/" + \
+            floating_id + ".json"
+        _headers = {'x-auth-token': self.project_info["token"],
+                    'content-type': 'application/json'}
+        _floatingip_info = {"floatingip": {"port_id": None}}
+        _body = json.dumps(_floatingip_info)
+
+        response = self.request("PUT", _url, _headers, _body)
+
+        if response is None:
+            print (" no response from Server")
+            return response
+
+        if response.status not in [200, 201, 202, 203, 204]:
+            print ("Disassociating floating ip Failed with status %s \n"
+                   % response.status)
+            return response.status
+
+        output = json.loads(response.data)
+
+        print ("Dissociated floating ip %s \n"
+               % output['floatingip']['floating_ip_address'])
+        return True
+
+    def delete_floating_ip(self, floating_id):
+        """
+        For Deleting floating ips.
+        Argu:
+            floating_id: floating ip id.
+        Return: On successful deletion of floating ip returns True,
+        """
+        print ("Deleting floating ip with id %s" % floating_id)
+
+        _url = "http://" + self.host_ip + ":9696/v2.0/floatingips/" + \
+            floating_id + ".json"
+        _headers = {'x-auth-token': self.project_info["token"],
+                    'content-type': 'application/json'}
+        _body = None
+        response = self.request("DELETE", _url, _headers, _body)
+
+        if response is None:
+            print ("No response from server while deleting flaoting "
+                   "ip with id %s\n" % floating_id)
+            return response
+
+        if response.status not in [200, 201, 202, 203, 204]:
+            print ("Deleting floating ip Failed with status %s\n"
+                   % response.status)
+            return response.status
+
+        print ("Deleted floating ip with id: %s \n" % floating_id)
+        return True

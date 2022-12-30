@@ -1,0 +1,49 @@
+#This is to configure ha.
+
+castlight::high_availability: 'true'
+castlight::local_repo: false
+#####keepalived############
+keepalived::interface : "enp0s9"
+keepalived::virtual_ip : "192.168.57.110/24"
+#keepalived::priority : ""
+keepalived::auth_pass : "secret"
+
+#######haproxy############
+haproxy::listen_ip : "192.168.57.110"
+# all port of running apps(mysql, glance, keystone, nova, neutron ...etc) in controller
+haproxy::listen_ports : 
+    - "3306"
+    - "35357"
+    - "5000"
+    - "8004"
+    - "8776"
+    - "9191"
+    - "9292"
+    - "8774"
+    - "8777"
+    - "9696"
+    - "8080"
+haproxy::local_ip : "%{ipaddress_enp0s9}"
+haproxy::members : 
+    - ipaddress : "192.168.57.101"
+      hostname : "os-controller1"
+    - ipaddress : "192.168.57.102"
+      hostname : "os-controller2"
+
+#######galera############
+#galera::servers : ["10.1.1.21", "10.1.1.22"]
+galera::servers : 
+    - "192.168.57.101"
+    - "192.168.57.102"
+galera::master : "os-controller1"
+galera::vendor_type : "mariadb"
+galera::local_ip : "%{ipaddress_enp0s9}"
+galera::root_password : "secret"
+galera::status_password : "secret"
+#galera::repo_keyserver : "hkp://keyserver.ubuntu.com:80"
+#galera::repo_key : "0xcbcb082a1bb943db"
+#galera::repo_location : "http://ams2.mirrors.digitalocean.com/mariadb/repo/5.5/ubuntu"
+#galera::repo_keyserver : "http://yum.mariadb.org/10.0/centos7-amd64"
+galera::repo_keyserver : "https://yum.mariadb.org/RPM-GPG-KEY-MariaDB"
+galera::repo_key : "0xcbcb082a1bb943db"
+galera::repo_location : "http://yum.mariadb.org/10.0/rhel7-amd64/"

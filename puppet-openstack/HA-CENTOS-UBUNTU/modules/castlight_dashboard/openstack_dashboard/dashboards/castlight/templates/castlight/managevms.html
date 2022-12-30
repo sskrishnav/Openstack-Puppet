@@ -1,0 +1,145 @@
+{% extends "castlight_base.html" %}
+
+{% block manage_vms_content %}
+<div class="content-holder">
+    <h1 class="section-title">Available VMs</h1>
+    <div class="table-responsive content-table">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>VM</th>
+                    <th>CURRENT STATE</th>
+                    <th>CONFIGURATION<span>( DISK / RAM / CPUs )</span></th>
+                    <th>IP ADDRESS</th>
+                    <th class="grid-actions" colspan="4">ACTION</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for instance in instances_list %}
+                <tr class="success" server-id="{{instance.server_id}}">
+                    <td>{{instance.name}}</td>
+                    <td>{{instance.state}}</td>
+                    <td>{{instance.configuration}}</td>
+                    <td>{{instance.address}}</td>
+
+                    {% if instance.state == 'RUNNING' %}
+                    <td>
+                        {% load staticfiles %}
+                        <a data-action="stop"><img src='{%static "castlight/img/stop.png" %}' alt="" width="18" title="Stop" /></a>
+                    </td>
+                    <td>
+                        {% load staticfiles %}
+                        <a data-action="reset"><img src='{%static "castlight/img/restart.png" %}' alt="" width="18" title="Reset" /></a>
+                    </td>
+                    <td>
+                        {% load staticfiles %}
+                        <a data-action="delete"><img src='{%static "castlight/img/delete.png" %}' alt="" width="18" title="Delete" /></a>
+                    </td>
+                    {% elif instance.state == 'SHUTDOWN' %}
+                    <td colspan="2">
+                        {% load staticfiles %}
+                        <a data-action="start" ><img src='{%static "castlight/img/start.png" %}' alt="" width="18" title="Start" /></a>
+                    </td>
+                    <td >
+                        {% load staticfiles %}
+                        <a data-action="delete"><img src='{%static "castlight/img/delete.png" %}' alt="" width="18" title="Delete" /></a>
+                    </td>
+                    {% elif instance.state == 'ERROR' %}
+                        {% if instance.address == None %}
+                        <td  colspan = "4">
+                        {% else %}
+                        <td  colspan = "3">
+                        {% endif %}
+                        {% load staticfiles %}
+                        <a data-action="delete"><img src='{%static "castlight/img/delete.png" %}' alt="" width="18" title="Delete" /></a>
+                        </td>
+                    {% endif %}
+                    
+                    
+                    {% if instance.address_type == 'floating' %}
+                    <td>
+                        {% load staticfiles %}
+                        <a data-action="disassociate"><img src='{%static "castlight/img/disassociate.png" %}' alt="" width="18" title="Dissociate Floating IP" /></a>
+                    </td>
+                    {% else %}
+                    <td >
+                        {% load staticfiles %}
+                        <a data-action="associate"><img src='{%static "castlight/img/associate.png" %}' alt="" width="18" title="Associate Floating IP" /></a>
+                    </td>
+                    {% endif %}
+
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="6">
+                        <nav class="pull-left">
+                            <ul class="pagination">
+                                {% if instances_list.has_previous %}
+                                <li>
+                                <a href="?page={{ instances_list.previous_page_number }}">Previous</a>
+                                </li>
+                                {% endif %}
+                                {% for num in instances_list.paginator.page_range %}
+                                
+                                {% ifequal num instances_list.number %}
+                                    <li class="active">
+                                    <span class="current"><b>{{ num }}</b></span>
+                                    </li>
+                                {% else %}
+                                    <li>
+                                    <a href="?page={{ num }}"> {{ num }}</a>
+                                    </li>
+                                {% endifequal %}
+                                
+                                {% endfor %}
+                                {% if instances_list.has_next %}
+                                <li>
+                                    <a href="?page={{ instances_list.next_page_number }}">Next</a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </nav>
+                        
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<div id="assignFloatingIpModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Assign Floating IP </h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" id="floating_ip_form">
+                    {% csrf_token %}
+                    <div class="form-group">
+                    <label for="section" class="col-sm-3 control-label"> IP Address</label>
+                    <div class="dropdown col-sm-6">
+                        <select id="floating_ip_menu" name="floating_ip_list"> 
+                            
+                        </select>
+                        </div>
+                    </div>
+                   
+                    
+                    <div class="form-group" style="padding-left: 160px;">
+
+                        <button type="submit" class="btn btn-warning" id="submit_button" alight="center">Assign</button>
+                        <button type="button" class="btn btn-default btn-sm"
+                        data-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> 
+
+{% endblock %}

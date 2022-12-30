@@ -1,0 +1,15 @@
+---
+:backends:
+    - yaml
+    - json
+:yaml:
+    :datadir: /etc/puppet/hieradata
+:json:
+    :datadir: /etc/puppet/hieradata
+:hierarchy: 
+#    - "nodes/%{::fqdn}"
+    - "nodes/%{hostname}"
+#    - "%{::hostname}"
+    - ha
+    - common
+:logger: console

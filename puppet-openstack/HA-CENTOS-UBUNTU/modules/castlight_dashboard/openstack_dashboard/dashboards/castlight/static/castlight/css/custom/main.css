@@ -1,0 +1,115 @@
+.main {
+  padding-left: 100px;
+  padding-right: 100px;
+}
+
+.header img {
+  float: left;
+  width: 100%;
+  height: 90px;
+  background: #555;
+}
+
+
+
+#logout img {
+  float: left;
+  
+}
+
+.nopadding {
+   padding: 0 !important;
+   margin: 0 !important;
+}
+
+.header {
+    
+    border-bottom: 1px #EEE;
+    background-color: #ffffff;
+    height: 90px;
+    width: 100%;
+    /*padding: 5px;*/
+    /*background-image: url('/static/castlight/img/castlight_logo.png');*/
+    background-repeat: no-repeat;
+}
+
+#content {
+    /*background-image: url('/static/castlight/img/background.png');*/
+    /*background-repeat: no-repeat;*/
+    background: #D3D3D3;
+    height: 500px;
+    padding: 50px;
+}
+
+#content table, th, td {
+    border: 1px solid black;
+
+} 
+#content .content-table {
+    padding: 50px;
+}
+#content .title {
+    padding-left: 50px;
+    padding-top: 0px;
+    color: #ff5c33;
+    
+}
+#content .createvm_title {
+    padding-left: 250px;
+    padding-top: 0px;
+    color: #ff5c33;
+    
+}
+
+#content .fieldWrapper {
+  margin: 13px;
+}
+
+#content .fieldWrapper input[id="id_password"] {
+  margin: 5px;
+}
+
+#content .nav {
+  padding-left: 100px;
+}
+#content .nav img {
+  margin: 30px
+} 
+
+#content .create_vm {
+    padding-left: 250px;
+    padding-top: 20px;
+    
+}
+
+#content .login {
+  background: url('/static/castlight/img/login_background.png');
+  background-repeat: no-repeat;
+  background-size: 500px;
+  padding: 25px;
+  border-radius: 10px;
+  max-width: 350px;
+  display: inline-block;
+  box-shadow: 10px 10px 5px #888888;
+}
+
+.login_content {
+  padding: 100px;
+  padding-left: 300px;
+}
+
+#content .error_message {
+  color: #ff5c33;
+}
+
+#content a {
+  cursor:pointer;
+}
+
+#content .content-table .loading_button img {
+  height: 50%
+}
+
+.pagination {
+  
+}

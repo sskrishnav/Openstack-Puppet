@@ -1,0 +1,2 @@
+castlight_testcase_get_uname
+castlight_testcase_get_interfaces

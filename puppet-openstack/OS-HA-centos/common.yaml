@@ -1,0 +1,176 @@
+
+castlight::region: 'openstack'
+castlight::swift::hash_prefix: 'bang-pop'
+######## Networks
+castlight::network::api: '192.168.57.0/24'
+castlight::network::external: '192.168.58.0/24'
+castlight::network::management: "192.168.57.0/24"
+castlight::network::data: '192.168.57.0/24'
+
+castlight::network::external::ippool::start: 192.168.57.200
+castlight::network::external::ippool::end: 192.168.57.220
+castlight::network::external::gateway: 192.168.57.200
+castlight::network::external::dns: 192.168.57.200
+
+######## Private Neutron Network
+
+castlight::network::neutron::private: '5.0.0.0/24'
+
+######## Fixed IPs (controllers)
+
+castlight::controller::address::api: "%{ipaddress_enp0s9}"
+castlight::controller::address::management: "%{ipaddress_enp0s9}"
+castlight::storage::address::api: "%{ipaddress_enp0s9}"
+castlight::storage::address::management: "%{ipaddress_enp0s9}"
+openstack::config::storage_drive: '/dev/sdb'
+openstack::config::storage_partition_type: 'xfs'
+
+######## Database
+
+castlight::mysql::root_password: 'secret'
+castlight::mysql::service_password: 'secret'
+castlight::mysql::allowed_hosts: ['localhost', '127.0.0.1', '192.168.57.%', '%']
+
+castlight::mysql::keystone::user: 'keystone'
+castlight::mysql::keystone::pass: 'secret'
+
+castlight::mysql::cinder::user: 'cinder'
+castlight::mysql::cinder::pass: 'secret'
+
+castlight::mysql::glance::user: 'glance'
+castlight::mysql::glance::pass: 'secret'
+castlight::glance::api_servers: ["%{ipaddress_enp0s9}:9292"]
+
+castlight::mysql::nova::user: 'nova'
+castlight::mysql::nova::pass: 'secret'
+
+castlight::mysql::neutron::user: 'neutron'
+castlight::mysql::neutron::pass: 'secret'
+
+castlight::mysql::heat::user: 'heat'
+castlight::mysql::heat::pass: 'secret'
+
+castlight::mysql::swift::user: 'swift'
+castlight::mysql::swift::pass: 'secret'
+
+######## RabbitMQ
+
+castlight::rabbitmq::user: 'openstack'
+castlight::rabbitmq::password: 'rabbit_pass'
+castlight::rabbitmq::hosts: ["192.168.57.101", "192.168.57.102"]
+castlight::rabbitmq::cluster_nodes: ["os-controller1", "os-controller2"]
+
+######## Keystone
+
+castlight::keystone::admin_token: 'sosp-kyl'
+castlight::keystone::admin_email: 'sivakrishna.vutukuri@imaginea.com'
+castlight::keystone::admin_password: 'admin_pass'
+
+castlight::keystone::tenants:
+    "test":
+        description: "Test tenant"
+    "test2":
+        description: "Test tenant"
+
+castlight::keystone::users:
+    "test":
+        password: "demo_pass"
+        tenant: "test"
+        email: "test@example.com"
+        admin: true
+    "demo":
+        password: "demo_pass"
+        tenant: "test"
+        email: "demo@example.com"
+        admin: false
+    "demo2":
+        password: "demo_pass"
+        tenant: "test2"
+        email: "demo@example.com"
+        admin: false
+
+######## Glance
+
+castlight::glance::password: 'secret'
+
+######## Cinder
+
+castlight::cinder::password: 'cinder_pass'
+castlight::cinder::volume_size: '8G'
+
+######## Swift
+######## Swift
+castlight::swift::password: 'swift_pass'
+castlight::swift::hash_suffix: 'pop-bang'
+castlight::swift::hash_prefix: 'bang-pop'
+castlight::swift::storage_drive: '/dev/sdb'
+castlight::swift::storage_partition_type: 'xfs'
+castlight::tempest::swift_available: false
+####### SWIFT
+castlight::swift::servers :
+    - "192.168.57.101"
+    - "192.168.57.102"
+castlight::swift::servers::hostnames :
+    - 'os-controller1'
+    - 'os-controller2'
+######## Nova
+
+castlight::nova::libvirt_type: 'qemu'
+castlight::nova::password: 'nova_pass'
+
+######## Neutron
+
+castlight::neutron::password: 'neutron_pass'
+castlight::neutron::shared_secret: 'by-sa-bo'
+castlight::neutron::core_plugin: 'ml2'
+#castlight::neutron::service_plugins: ['router', 'firewall', 'lbaas', 'vpnaas', 'metering']
+castlight::neutron::service_plugins: ['router']
+castlight::neutron::max_l3_agents_per_router: 2
+castlight::neutron::min_l3_agents_per_router: 2
+######## Ceilometer
+castlight::ceilometer::address::management: "%{ipaddress_enp0s9}"
+castlight::ceilometer::mongo::username: 'mongo'
+castlight::ceilometer::mongo::password: 'mongosecretkey123'
+castlight::ceilometer::password: 'ceilometer_pass'
+castlight::ceilometer::meteringsecret: 'ceilometersecretkey'
+
+######## Heat
+castlight::heat::password: 'heat_pass'
+castlight::heat::encryption_key: 'heatsecretkey123'
+
+
+######## Horizon
+
+castlight::horizon::secret_key: 'whu-ghuk'
+
+######## Tempest
+
+castlight::tempest::configure_images    : true
+castlight::tempest::image_name          : 'Cirros'
+castlight::tempest::image_name_alt      : 'Cirros'
+castlight::tempest::username            : 'demo'
+castlight::tempest::username_alt        : 'demo2'
+castlight::tempest::username_admin      : 'test'
+castlight::tempest::configure_network   : true
+castlight::tempest::public_network_name : 'public'
+castlight::tempest::cinder_available    : true
+castlight::tempest::glance_available    : true
+castlight::tempest::horizon_available   : true
+castlight::tempest::nova_available      : true
+castlight::tempest::neutron_available   : true
+castlight::tempest::heat_available      : false
+castlight::tempest::swift_available     : false
+
+######## Log levels
+castlight::verbose: 'True'
+castlight::debug: 'True'
+
+
+####### SWIFT
+swift01_hostname: 'os-controller1'
+swift02_hostname: 'os-controller2'
+#swift03_hostname: 'swift3'
+swift01_ip: '192.168.57.101'
+swift02_ip: '192.168.57.102'
+#swift03_ip: '192.168.15.181'
+swift_vip: '192.168.57.110'

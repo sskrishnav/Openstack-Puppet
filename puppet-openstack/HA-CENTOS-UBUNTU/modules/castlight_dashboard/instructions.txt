@@ -1,0 +1,18 @@
+- sudo pip install hurry.filesize
+
+- sudo pip install 'django-pyscss>=2.0.0'
+
+- sudo cp -R /opt/castlight_dashboard/openstack_dashboard/dashboards/castlight /usr/share/openstack_dashboard/dashboards/
+
+- copy '/opt/castlight_dashboard/local_settings.py' to '/etc/openstack_dashboard/local_settings.py'
+
+- Replace '/usr/share/openstack_dashboard/openstack_dashboard/urls.py' with '/opt/castlight_dashboard/openstack_dashboard/urls.py'
+
+- copy '/opt/castlight_dashboard/openstack_dashboard/local/enabled/_40_castlight.py' to '/usr/share/openstack_dashboard/local/enabled/_50_castlight.py'
+
+- Replace '/etc/apache2/conf-enabled/openstack-dashboard.conf' with '/opt/castlight_dashboard/openstack-dashboard.conf'
+
+- Restart apache
+
+
+

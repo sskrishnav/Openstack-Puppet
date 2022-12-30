@@ -1,0 +1,64 @@
+{% extends "castlight_base.html" %}
+
+{% block utilization_content %}
+<div class="content-holder">
+    <h1 class="section-title">Utilization</h1>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>VM</th>
+                    <th>CPU (%)</th>
+                    <th>DISK USAGE</th>
+                    <th>MEMORY USAGE</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for instance in instances_list %}
+                <tr>
+                    <td>{{instance.name}}</td>
+                    <td>{{instance.cpu_util}}</td>
+                    <td>{{instance.disk_usage}}</td>
+                    <td>{{instance.memory_usage}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="6">
+                        <nav class="pull-left">
+                            <ul class="pagination">
+                                {% if instances_list.has_previous %}
+                                <li>
+                                <a href="?page={{ instances_list.previous_page_number }}">Previous</a>
+                                </li>
+                                {% endif %}
+                                {% for num in instances_list.paginator.page_range %}
+                                
+                                {% ifequal num instances_list.number %}
+                                    <li class="active">
+                                    <span class="current"><b>{{ num }}</b></span>
+                                    </li>
+                                {% else %}
+                                    <li>
+                                    <a href="?page={{ num }}"> {{ num }}</a>
+                                    </li>
+                                {% endifequal %}
+                                
+                                {% endfor %}
+                                {% if instances_list.has_next %}
+                                <li>
+                                    <a href="?page={{ instances_list.next_page_number }}">Next</a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </nav>
+                        
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}
